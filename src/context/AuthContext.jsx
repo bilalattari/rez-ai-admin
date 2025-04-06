@@ -18,7 +18,10 @@ export const AuthProvider = ({ children }) => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!user) {
+    const publicRoutes = ["/privacy-policy", "/terms"];
+    const isPublicRoute = publicRoutes.includes(window.location.pathname);
+
+    if (!user && !isPublicRoute) {
       navigate("/");
     }
   }, [user, navigate]);
