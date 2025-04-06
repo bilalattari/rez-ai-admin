@@ -12,6 +12,8 @@ import Users from "./pages/Users/Users";
 import Recipes from "./pages/Recipes/Recipes";
 import Questions from "./pages/Questions/Questions";
 import Answers from "./pages/Answers/Answers";
+import Privacy from "./pages/Privacy/Privacy";
+import Terms from "./pages/Terms/Terms";
 
 function App() {
   return (
@@ -21,6 +23,8 @@ function App() {
           <ToastContainer position="top-right" autoClose={3000} />
           <Routes>
             <Route path="/" element={<Login />} />
+            <Route path="/privacy-policy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
 
             <Route element={<ProtectedRoute />}>
               <Route element={<DashboardLayout />}>
