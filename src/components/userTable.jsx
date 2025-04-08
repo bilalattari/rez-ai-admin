@@ -1,3 +1,4 @@
+/*  UsersTable.tsx  */
 "use client";
 
 import { useState } from "react";
@@ -11,6 +12,9 @@ import {
   Apple,
   ChromeIcon as Google,
 } from "lucide-react";
+
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-toastify";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,18 +34,50 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { API_BASE_URL } from "@/constant/constant";
+
+/* ---------- helper that calls the API ---------- */
+async function deleteUser(id) {
+  const res = await fetch(API_BASE_URL+ "/auth", {
+    method: "DELETE", // change to "POST" if your backend uses POST
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId: id }),
+  });
+
+  const data = await res.json();
+  if (!res.ok || data.error)
+    throw new Error(data.msg || "Failed to delete user");
+  return id; // we return the id so onSuccess knows which user
+}
 
 export default function UsersTable({ initialData }) {
+  /* ---------- local state for pagination ---------- */
+  const [users, setUsers] = useState(initialData.data);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const users = initialData.data;
+  /* ---------- react‑query ---------- */
+  const queryClient = useQueryClient();
+  const { mutate: deleteUserMutate, isLoading: isDeleting } = useMutation({
+    mutationFn: deleteUser,
+    onSuccess: (deletedId) => {
+      toast.success("User deleted");
+      // remove from local state
+      setUsers((prev) => prev.filter((u) => u._id !== deletedId));
+      // or, if you keep a query ["users"] elsewhere, invalidate it:
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (err) => {
+      toast.error(err.message || "Could not delete user");
+    },
+  });
+
+  /* ---------- pagination helpers ---------- */
   const totalPages = Math.ceil(users.length / itemsPerPage);
-
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentUsers = users.slice(startIndex, endIndex);
+  const currentUsers = users.slice(startIndex, startIndex + itemsPerPage);
 
+  /* ---------- icon helper ---------- */
   const getProviderIcon = (provider) => {
     switch (provider) {
       case "google":
@@ -55,6 +91,7 @@ export default function UsersTable({ initialData }) {
     }
   };
 
+  /* ---------- render ---------- */
   return (
     <div className="space-y-4">
       <div className="rounded-md border">
@@ -69,6 +106,7 @@ export default function UsersTable({ initialData }) {
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
+
           <TableBody>
             {currentUsers.map((user) => (
               <TableRow key={user._id}>
@@ -92,6 +130,8 @@ export default function UsersTable({ initialData }) {
                 <TableCell>
                   {format(new Date(user.createdAt), "MMM dd, yyyy")}
                 </TableCell>
+
+                {/* actions */}
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -100,13 +140,19 @@ export default function UsersTable({ initialData }) {
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
+
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem>View details</DropdownMenuItem>
-                      <DropdownMenuItem>Edit user</DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive">
+                      <DropdownMenuItem
+                        disabled={isDeleting}
+                        onClick={() => {
+                          if (confirm("Delete this user?")) {
+                            deleteUserMutate(user._id);
+                          }
+                        }}
+                        className="text-destructive"
+                      >
                         Delete user
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -118,30 +164,28 @@ export default function UsersTable({ initialData }) {
         </Table>
       </div>
 
-      {/* Pagination */}
+      {/* pagination */}
       <div className="flex items-center justify-end space-x-2">
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
           disabled={currentPage === 1}
         >
-          <ChevronLeft className="h-4 w-4" />
-          Previous
+          <ChevronLeft className="h-4 w-4" /> Previous
         </Button>
-        <div className="flex items-center gap-1 text-sm font-medium">
-          Page {currentPage} of {totalPages}
+
+        <div className="text-sm font-medium">
+          Page {currentPage} of {totalPages || 1}
         </div>
+
         <Button
           variant="outline"
           size="sm"
-          onClick={() =>
-            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-          }
+          onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
           disabled={currentPage === totalPages}
         >
-          Next
-          <ChevronRight className="h-4 w-4" />
+          Next <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
     </div>
