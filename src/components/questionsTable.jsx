@@ -118,7 +118,7 @@ export default function QuestionsTable({ initialData, onEdit, onDelete }) {
                               variant="outline"
                               className="text-xs"
                             >
-                              {option}
+                              {option?.label}
                             </Badge>
                           ))}
                           {question.options.length > 2 && (
@@ -132,7 +132,7 @@ export default function QuestionsTable({ initialData, onEdit, onDelete }) {
                         <div className="space-y-1">
                           {question.options.map((option, index) => (
                             <div key={index} className="text-sm">
-                              {index + 1}. {option}
+                              {index + 1}. {option?.label}
                             </div>
                           ))}
                         </div>
