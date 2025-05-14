@@ -38,10 +38,9 @@ import { API_BASE_URL } from "@/constant/constant";
 
 /* ---------- helper that calls the API ---------- */
 async function deleteUser(id) {
-  const res = await fetch(API_BASE_URL+ "/auth", {
-    method: "DELETE", // change to "POST" if your backend uses POST
+  const res = await fetch(API_BASE_URL + "/auth/" + id, {
+    method: "DELETE",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId: id }),
   });
 
   const data = await res.json();
